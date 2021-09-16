@@ -8,51 +8,15 @@ import streamlit as st
 # Tady původně problém s diakritikou, kterou nezvládá defaultní encoding v utf-8
 # Použitý soubor .csv má ANSI kódování, proto je také nutné provést encoding v ANSI
 
-#Pomocné listy kvůli problémům s encodingem
-registr = ['Občanská demokratická strana',
-               'Řád národa - Vlastenecká unie',
-               'CESTA ODPOVĚDNÉ SPOLEČNOSTI',
-               'Česká strana sociálně demokratická',
-               'Volte Pravý Blok',
-               'Radostné Česko',
-               'STAROSTOVÉ A NEZÁVISLÍ',
-               'Komunistická strana Čech a Moravy',
-               'Strana zelených',
-               'ROZUMNÍ - stop migraci a diktátu EU',
-               'Společnost proti developerské výstavbě v Prokopském údolí',
-               'Strana svobodných občanů',
-               'Blok proti islamizaci - Obrana domova',
-               'Občanská demokratická aliance',
-               'Česká pirátská strana',
-               'OBČANÉ 2011-SPRAVEDLNOST PRO LIDI',
-               'Unie H.A.V.E.L.',
-               'Česká národní fronta',
-               'Referendum o EU	Referendum o Evropské unii',
-               'TOP 09',
-               'ANO 2011',
-               'Dobrá volba 2016',
-               'Sdružení pro republiku',
-               'Křesťanská a demokratická unie',
-               'Česká strana národně sociální',
-               'REALISTÉ',
-               'SPORTOVCI',
-               'Dělnická strana sociální spravedlnosti',
-               'Svoboda a přímá demokracie',
-               'Strana Práv Občanů',
-               'Národ Sobě'
-               ]
-
 @st.cache
 def primary_table():
-    rough_df = pd.read_csv('Districts.csv', encoding='latin-1').fillna(0).set_index('Kraj')
+    rough_df = pd.read_csv('Districts.csv', encoding='latin2').fillna(0).set_index('Kraj')
     basic_df = (rough_df
         .drop(columns=['Vydané obálky', 'Odevzdané obálky'])
         .apply(lambda x, y: x if x.name == 'Platné hlasy' else x/y*100, y=rough_df['Platné hlasy'])
         .drop(['Platné hlasy', 'Unnamed: 4'], axis=1)
         .round(1)
         )
-
-    basic_df.set_axis(registr, 1)
 
     return basic_df
 
