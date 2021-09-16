@@ -10,7 +10,7 @@ import streamlit as st
 
 @st.cache
 def primary_table():
-    rough_df = pd.read_csv('Districts.csv', encoding='ANSI').fillna(0).set_index('Kraj')
+    rough_df = pd.read_csv('Districts.csv', encoding='latin-1').fillna(0).set_index('Kraj')
     basic_df = (rough_df
         .drop(columns=['Vydané obálky', 'Odevzdané obálky'])
         .apply(lambda x, y: x if x.name == 'Platné hlasy' else x/y*100, y=rough_df['Platné hlasy'])
@@ -100,6 +100,8 @@ colors = ['blue', 'brown', 'green', 'red', 'orange']
 parties_selection = st.multiselect('Parties', basic_df.columns)
 for i in range(len(parties_selection)):
     st.pyplot(plot_one_party(basic_df, parties_selection[i], colors[i%5]))
+
+print(basic_df)
 
 
 
