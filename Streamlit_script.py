@@ -31,13 +31,13 @@ def max_len(*args: str):
 def parties(table, district: str):
     intermediate = table.loc[district].sort_values(ascending=False).to_frame().reset_index()
     aggregated = (intermediate
-                .assign(Strana=np.where(intermediate[district] >= 1, intermediate['index'], 'Ostatní'))
+                .assign(Strana=np.where(intermediate[district] >= 1, intermediate['index'], 'Other parties'))
                 .drop('index', axis=1)
                 .groupby('Strana').sum()
                   )
 
-    without_minors = aggregated[aggregated.index != 'Ostatní'].sort_values(by=district, ascending=False)
-    only_minors = aggregated[aggregated.index == 'Ostatní']
+    without_minors = aggregated[aggregated.index != 'Other parties'].sort_values(by=district, ascending=False)
+    only_minors = aggregated[aggregated.index == 'Other parties']
     return without_minors.append(only_minors)
 
 def plot_one_party(table, party: str, color: str):
