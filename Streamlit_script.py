@@ -6,8 +6,7 @@ import streamlit as st
 
 # Převod dat z .csv do DataFrame, nahrazení chybějících hodnot nulami a nastavení indexu 'Kraj'
 # Tady původně problém s diakritikou, kterou nezvládá defaultní encoding v utf-8
-# Použitý soubor .csv má ANSI kódování, proto je také nutné provést encoding v ANSI
-
+# Použitý soubor
 @st.cache
 def primary_table():
     rough_df = pd.read_csv('Districts.csv', encoding='windows-1250').fillna(0).set_index('Kraj')
@@ -18,7 +17,12 @@ def primary_table():
         .round(1)
         )
 
-    return basic_df
+    means = basic_df.apply(np.mean, axis=0).sort_values(ascending=False)
+    return basic_df.loc[:, means.index]
+
+def basic_df_sorted(df):
+    means = df.apply(np.mean, axis=0).sort_values(ascending=False)
+    return df.loc[:, means.index]
 
 def max_len(*args: str):
     max = 0
@@ -97,14 +101,10 @@ st.pyplot(minors_show(basic_df, district))
 # Bar charts
 st.write('## Here you can look at the ordered results for selected parties')
 st.write('You can do a multiple selection if you want to see results for more parties')
-colors = ['blue', 'brown', 'green', 'red', 'orange']
+colors = ['purple', 'brown', 'blue', 'yellow', 'red']
 parties_selection = st.multiselect('Parties', basic_df.columns)
 for i in range(len(parties_selection)):
     st.pyplot(plot_one_party(basic_df, parties_selection[i], colors[i%5]))
-
-print(basic_df.columns)
-
-
 
 
 
