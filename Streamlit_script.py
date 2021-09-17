@@ -4,9 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import streamlit as st
 
-# Převod dat z .csv do DataFrame, nahrazení chybějících hodnot nulami a nastavení indexu 'Kraj'
-# Tady původně problém s diakritikou, kterou nezvládá defaultní encoding v utf-8
-# Použitý soubor
+# Csv to DataFrame, decorated by streamlit.cache (to make the app faster)
 @st.cache
 def primary_table():
     rough_df = pd.read_csv('Districts.csv', encoding='windows-1250').fillna(0).set_index('Kraj')
@@ -19,19 +17,6 @@ def primary_table():
 
     means = basic_df.apply(np.mean, axis=0).sort_values(ascending=False)
     return basic_df.loc[:, means.index]
-
-def basic_df_sorted(df):
-    means = df.apply(np.mean, axis=0).sort_values(ascending=False)
-    return df.loc[:, means.index]
-
-def max_len(*args: str):
-    max = 0
-    for arg in args:
-        if len(arg) > max:
-            max = len(arg)
-
-    return max
-
 
 def parties(table, district: str):
     intermediate = table.loc[district].sort_values(ascending=False).to_frame().reset_index()
@@ -65,6 +50,7 @@ def plot_pie(table, district: str):
     fig, ax = plt.subplots(1, 1, figsize=(10, 12))
     wedges, labels, autopct = ax.pie(parties_df[district], labels=parties_df.index, rotatelabels=False, autopct=lambda x: f'{x:.1f} %')
     plt.setp(labels, fontsize=20)
+    ax.set_title(f'Results for {district}', fontsize=28)
     return fig
 
 def minors_show(table, district):
@@ -86,29 +72,33 @@ def minors_show(table, district):
 # DataFrame for the streamlit app
 basic_df = primary_table()
 
+# Function for displaying results of elections according to districts
+def district_res():
+    st.write('## Here you can look at the results for selected districts')
+    districts = st.multiselect('Districts', basic_df.index)
+    for district in districts:
+        st.pyplot(plot_pie(basic_df, district))
+        st.pyplot(minors_show(basic_df, district))
+
+# Function for displaying results of elections according to parties
+def parties_res():
+    st.write('## Here you can look at the ordered results for selected parties')
+    st.write('You can do a multiple selection if you want to see results for more parties')
+    colors = ['purple', 'brown', 'blue', 'yellow', 'red']
+    parties_selection = st.multiselect('Parties', basic_df.columns)
+    for i in range(len(parties_selection)):
+        st.pyplot(plot_one_party(basic_df, parties_selection[i], colors[i%5]))
+
 # Introduction
 st.write('''# Parliament Elections 2017
 Parliament elections in 2021 knock on the door.
 To avoid wrong decisions, we should always look into history.
-There is a small application for viewing the results of the last elections!''')
+There is a small application for viewing the results of the last elections!
+Use the sidebar navigation to choose viewing results for districts or results for parties''')
 
-# Pie chart and minors
-st.write('## Here you can look at the results for a given district')
-district = st.selectbox('District', basic_df.index)
-st.pyplot(plot_pie(basic_df, district))
-st.pyplot(minors_show(basic_df, district))
-
-# Bar charts
-st.write('## Here you can look at the ordered results for selected parties')
-st.write('You can do a multiple selection if you want to see results for more parties')
-colors = ['purple', 'brown', 'blue', 'yellow', 'red']
-parties_selection = st.multiselect('Parties', basic_df.columns)
-for i in range(len(parties_selection)):
-    st.pyplot(plot_one_party(basic_df, parties_selection[i], colors[i%5]))
-
-
-
-
-
-
-
+# Choice of the mode (Districts or Parties) that drives the application up to the end
+mode = st.sidebar.radio('View results for', ['Districts', 'Parties'])
+if mode == 'Districts':
+    district_res()
+else:
+    parties_res()
