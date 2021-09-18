@@ -30,6 +30,14 @@ def parties(table, district: str):
     only_minors = aggregated[aggregated.index == 'Other parties']
     return without_minors.append(only_minors)
 
+def dist_comp_table(df, selection:list):
+    table = df[selection]
+    means = table.apply(np.mean, axis=0).sort_values(ascending=False)
+    table = table.loc[:, means.index].assign(sum=table.apply(np.sum, axis=1))
+    table['Other parties'] = table['sum'].apply(lambda x: 100 - x)
+    table = table.drop('sum', 1)
+    return table
+
 def plot_one_party(table, party: str, color: str):
     plt.rcParams.update({'font.size': 12})
 
@@ -67,12 +75,55 @@ def minors_show(table, district):
     ax.axis('off')
     return fig
 
+def dist_comp_plot(table):
+    parties = table.columns.tolist()
+    colors = ['purple', 'brown', 'blue', 'orange', 'yellow', 'red', 'lightblue']
+    districts = table.index.tolist()
+    bottoms = [len(districts) * [0]]
+    for party in parties[:-1]:
+        bottoms.append(list((map(lambda x, y: x + y, bottoms[-1], table[party].to_list()))))
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 7))
+
+    for i in range(len(parties) - 1):
+        ax.bar(districts,
+               table[parties[i]],
+               bottom=bottoms[i],
+               label=parties[i],
+               width=0.45,
+               color=colors[i%7],
+               edgecolor='black')
+
+    others = parties[-1]
+    ax.bar(districts,
+           table[others],
+           bottom=bottoms[-1],
+           label=others,
+           width=0.45,
+           color='black',
+           edgecolor='black')
+
+    ax.set_xticklabels(districts, rotation=90, fontsize=14)
+    ax.legend(bbox_to_anchor=(0.1, 1), fontsize=12)
+    ax.set_ylabel('Votes (%)', fontsize=14)
+    ax.grid(axis='y', linewidth=1.2)
+
+    return fig
+
 # Streamlit part begins here
 
 # DataFrame for the streamlit app
 basic_df = primary_table()
 
 # Function for displaying results of elections according to districts
+def introduction_res():
+    st.write('''# Parliament Elections 2017
+    Parliament elections in 2021 knock on the door.
+    To avoid wrong decisions, we should always look into history.
+    There is a small application for viewing the results of the last elections!
+    Use the sidebar navigation to choose the application layer''')
+
+
 def district_res():
     st.write('## Here you can look at the results for selected districts')
     districts = st.multiselect('Districts', basic_df.index)
@@ -89,16 +140,21 @@ def parties_res():
     for i in range(len(parties_selection)):
         st.pyplot(plot_one_party(basic_df, parties_selection[i], colors[i%5]))
 
-# Introduction
-st.write('''# Parliament Elections 2017
-Parliament elections in 2021 knock on the door.
-To avoid wrong decisions, we should always look into history.
-There is a small application for viewing the results of the last elections!
-Use the sidebar navigation to choose viewing results for districts or results for parties''')
+def district_comp_res():
+    st.write('## Here you can see comparison of results for the districts with each other')
+    st.write('However, there are too many parties for one graph')
+    st.write('Therefore we kindly ask you for selecting the parties, which will be distinguished')
+    parties_selection = st.multiselect('Distinguished parties', basic_df.columns)
+    st.pyplot(dist_comp_plot(dist_comp_table(basic_df, parties_selection)))
 
-# Choice of the mode (Districts or Parties) that drives the application up to the end
-mode = st.sidebar.radio('View results for', ['Districts', 'Parties'])
-if mode == 'Districts':
+# Main part (drives the app)
+layers = ['Introduction', 'Districts', 'Parties', 'Districts - comparative']
+mode = st.sidebar.radio('Application layer', layers)
+if mode == 'Introduction':
+    introduction_res()
+elif mode == 'Districts':
     district_res()
-else:
+elif mode == 'Parties':
     parties_res()
+elif mode == 'Districts - comparative':
+    district_comp_res()
