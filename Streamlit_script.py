@@ -167,18 +167,25 @@ The districts with higher votes for *{party1}* showed a significant tendency to 
 
     return result
 
-# Streamlit part begins here
+# STREAMLIT PART BEGINS HERE
 
 # DataFrame for the streamlit app
 basic_df = primary_table()
 
 # Function for displaying results of elections according to districts
 def introduction_res():
-    st.write('''# Parliament Elections 2017
-    Parliament elections in 2021 knock on the door.
-    To avoid wrong decisions, we should always look into history.
-    There is a small application for viewing the results of the last elections!
-    Use the sidebar navigation to choose the application layer''')
+    st.write('# Parliament Elections 2017')
+    st.write('')
+    st.write('**To avoid wrong decisions, we should always look into history.**')
+    st.write('Parliament elections in 2021 knock on the door.')
+    st.write('There is a small application for viewing the results of the last elections!')
+    st.write('')
+    st.write('**Use the sidebar navigation to choose the application layer.**')
+    st.write('Although I recommend to use this application on the PC, it can be ran on the phone.')
+    st.write('In that case, please **open the sidebar using the small arrow in the upper left!**')
+    st.write('')
+    st.write('What more could be said? Just **ENJOY!**')
+    st.image('Flag.jpg')
 
 
 def district_res():
@@ -202,7 +209,8 @@ def district_comp_res():
     st.write('However, there are too many parties for one graph')
     st.write('Therefore we kindly ask you for selecting the parties, which will be distinguished')
     parties_selection = st.multiselect('Distinguished parties', basic_df.columns)
-    st.pyplot(dist_comp_plot(dist_comp_table(basic_df, parties_selection)))
+    if len(parties_selection) > 0:
+        st.pyplot(dist_comp_plot(dist_comp_table(basic_df, parties_selection)))
 
 def relationships_res():
     st.write('## Here you can see relationships between votes for the selected parties in individual districts')
@@ -218,10 +226,19 @@ def relationships_res():
 
     if party1 == party2:
         st.write('The same parties are selected to be compared. Come on, it would be so senseless! :-)')
-        st.write('Please, select different ones...')
+        st.write('**Please, select a pair of different parties**...')
     else:
+        st.write('### Results from all districts')
+        st.write('** Data from all districts are used, no exclusions **')
         st.write(corr_comment(basic_df, party1, party2))
         st.pyplot(correlation_plot(basic_df, party1, party2))
+
+        st.write('### Results with exclusion of Prague')
+        st.write('** Votes distribution from Prague is specific and these data are affecting the relationships strongly **')
+        st.write('** Here are the results, when Prague is excluded from the evaluation **\n\n')
+        no_prague = basic_df.drop('Hlavní město Praha', 0)
+        st.write(corr_comment(no_prague, party1, party2))
+        st.pyplot(correlation_plot(no_prague, party1, party2))
 
 
 # Main part (drives the app)
