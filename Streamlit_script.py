@@ -110,6 +110,63 @@ def dist_comp_plot(table):
 
     return fig
 
+def regline(ax, x, y, linestyle='-', color='black', linewidth=2.5):
+    a, b = np.polyfit(x, y, 1)
+    corr = np.corrcoef(x, y)[0, 1]
+    if b >= 0:
+        eq = 'y = {:.3f}*x + {:.3f}, corr_coef = {:.2f}'.format(a, b, corr)
+    else:
+        eq = 'y = {:.3f}*x + {:.3f}, corr_coef = {:.2f}'.format(a, b, corr)
+    reg_x = np.linspace(x.min(), x.max(), 3)
+    reg_y = a*reg_x + np.array(3*[b])
+
+    ax.plot(reg_x, reg_y, label=eq, linestyle=linestyle, color=color, linewidth=linewidth)
+
+def correlation_plot(table, party1: str, party2: str):
+    plt.rcParams.update({'font.size': 14})
+    x = table[party1]
+    y = table[party2]
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 7))
+    ax.scatter(x,
+               y,
+               s=70,
+               c='orange',
+               marker='o',
+               edgecolor='black',
+               label='Votes')
+
+    regline(ax, x, y, linewidth=1.5, linestyle='--')
+    ax.set_xlabel(f'{party1} - votes (%)', fontsize=14)
+    ax.set_ylabel(f'{party2} - votes (%)', fontsize=14)
+    ax.grid(linewidth=1.2)
+    ax.legend(bbox_to_anchor=(0.6, 1.14), fontsize=12)
+
+    return fig
+
+def corr_comment(table, party1: str, party2: str):
+    x = table[party1]
+    y = table[party2]
+    cc = np.corrcoef(x, y)[0, 1]
+
+    if cc >= 0.7:
+        result = f'''A strong positive correlation was found between the votes for *{party1}* and *{party2}* in individual districts.\n
+The districts with higher votes for *{party1}* showed  a significant tendency to bring higher votes for *{party2}*.'''
+    elif cc >= 0.4:
+        result = f'''A middle-strength positive correlation was found between the votes for *{party1}* and *{party2}* in individual districts.\n
+The districts with higher votes for *{party1}* showed a slight tendency to bring higher votes for *{party2}*.'''
+    elif cc >= -0.4:
+        result = f'''No significant correlation was found between the votes for *{party1}* and *{party2}* in individual districts.\n
+The votes for *{party1}* and votes for *{party2}* are independent.'''
+    elif cc >= -0.7:
+        result = f'''A middle-strength negative correlation was found between the votes for *{party1}* and *{party2}* in individual districts.\n
+The districts with higher votes for *{party1}* showed a slight tendency to bring lower votes for *{party2}*.'''
+    elif cc >= -1:
+        result = f'''A strong negative correlation was found between the votes for *{party1}* and *{party2}* in individual districts.\n
+The districts with higher votes for *{party1}* showed a significant tendency to bring lower votes for *{party2}*.'''
+
+    return result
+
 # Streamlit part begins here
 
 # DataFrame for the streamlit app
@@ -147,8 +204,28 @@ def district_comp_res():
     parties_selection = st.multiselect('Distinguished parties', basic_df.columns)
     st.pyplot(dist_comp_plot(dist_comp_table(basic_df, parties_selection)))
 
+def relationships_res():
+    st.write('## Here you can see relationships between votes for the selected parties in individual districts')
+    st.write('We propose the correlations between results are important only for the most important parties')
+    st.write('Therefore only 10 parties with highest votes are here to be selected')
+
+    relevant_parties = basic_df.iloc[:, :10].columns.tolist()
+    left_col, right_col = st.columns([1, 1])
+    with left_col:
+        party1 = st.selectbox('Choose first party', relevant_parties)
+    with right_col:
+        party2 = st.selectbox('Choose second party', relevant_parties)
+
+    if party1 == party2:
+        st.write('The same parties are selected to be compared. Come on, it would be so senseless! :-)')
+        st.write('Please, select different ones...')
+    else:
+        st.write(corr_comment(basic_df, party1, party2))
+        st.pyplot(correlation_plot(basic_df, party1, party2))
+
+
 # Main part (drives the app)
-layers = ['Introduction', 'Districts', 'Parties', 'Districts - comparative']
+layers = ['Introduction', 'Districts', 'Parties', 'Districts - comparative', 'Relationships']
 mode = st.sidebar.radio('Application layer', layers)
 if mode == 'Introduction':
     introduction_res()
@@ -158,3 +235,5 @@ elif mode == 'Parties':
     parties_res()
 elif mode == 'Districts - comparative':
     district_comp_res()
+elif mode == 'Relationships':
+    relationships_res()
