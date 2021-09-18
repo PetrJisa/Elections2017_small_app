@@ -216,6 +216,8 @@ def relationships_res():
     st.write('## Here you can see relationships between votes for the selected parties in individual districts')
     st.write('We propose the correlations between results are important only for the most important parties')
     st.write('Therefore only 10 parties with highest votes are here to be selected')
+    st.write('**The correlations are often strongly affected by data from Prague, which are specific!**')
+    st.write('Therefore the results including Prague and the results excluding Prague are evaluated separately')
 
     relevant_parties = basic_df.iloc[:, :10].columns.tolist()
     left_col, right_col = st.columns([1, 1])
@@ -234,8 +236,7 @@ def relationships_res():
         st.pyplot(correlation_plot(basic_df, party1, party2))
 
         st.write('### Results with exclusion of Prague')
-        st.write('** Votes distribution from Prague is specific and these data are affecting the relationships strongly **')
-        st.write('** Here are the results, when Prague is excluded from the evaluation **\n\n')
+        st.write('**Here are the results, when data from Prague are excluded from the evaluation**\n\n')
         no_prague = basic_df.drop('Hlavní město Praha', 0)
         st.write(corr_comment(no_prague, party1, party2))
         st.pyplot(correlation_plot(no_prague, party1, party2))
