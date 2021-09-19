@@ -167,6 +167,16 @@ The districts with higher votes for *{party1}* showed a significant tendency to 
 
     return result
 
+def rank_table(table, parties: list):
+    if len(parties) > 0:
+        table_rank = table.rank(axis=1, method='max', ascending=False).astype(int)
+        table_res = (table_rank[parties].style
+                     .background_gradient(cmap='viridis')
+                     )
+        form_dict = {c: '{:<7}' for c in table_res.columns}
+        table_res = table_res.format(precision=0, formatter=form_dict)
+        return table_res
+
 # STREAMLIT PART BEGINS HERE
 
 # DataFrame for the streamlit app
@@ -174,7 +184,7 @@ basic_df = primary_table()
 
 # Function for displaying results of elections according to districts
 def introduction_res():
-    st.write('# Parliament Elections 2017')
+    st.write('# Parliament elections 2017')
     st.write('')
     st.write('**To avoid wrong decisions, we should always look into history.**')
     st.write('Parliament elections in 2021 knock on the door.')
@@ -183,6 +193,8 @@ def introduction_res():
     st.write('**Use the sidebar navigation to choose the application layer.**')
     st.write('Although I recommend to use this application on the PC, it can be ran on the phone.')
     st.write('In that case, please **open the sidebar using the small arrow in the upper left!**')
+    st.write('')
+    st.write('**To display the generated objects in full screen mode, please use the double arrays.**')
     st.write('')
     st.write('What more could be said? Just **ENJOY!**')
     st.image('Flag.jpg')
@@ -201,8 +213,18 @@ def parties_res():
     st.write('You can do a multiple selection if you want to see results for more parties')
     colors = ['purple', 'brown', 'blue', 'yellow', 'red']
     parties_selection = st.multiselect('Parties', basic_df.columns)
+    st.write('***Warning!***')
+    st.write('The output is aimed at comparison of results for parties in different districts')
+    st.write('Therefore, the votes on y-axis are not displayed in the same scale for the parties')
     for i in range(len(parties_selection)):
         st.pyplot(plot_one_party(basic_df, parties_selection[i], colors[i%5]))
+
+def parties_rank_res():
+    st.write('## Here you can see ranking of the parties in the individual districts')
+    st.write('You can do a multiple selection if you want to see results for more parties')
+    parties = st.multiselect('Parties for ranking', basic_df.columns.tolist())
+    st.write('*If the party was not voted in the district, it obtained ranking 31*')
+    st.table(rank_table(basic_df, parties))
 
 def district_comp_res():
     st.write('## Here you can see comparison of results for the districts with each other')
@@ -243,15 +265,17 @@ def relationships_res():
 
 
 # Main part (drives the app)
-layers = ['Introduction', 'Districts', 'Parties', 'Districts - comparative', 'Relationships']
+layers = ['Introduction', 'Districts', 'Districts - comparative', 'Parties', 'Parties - ranking', 'Relationships']
 mode = st.sidebar.radio('Application layer', layers)
 if mode == 'Introduction':
     introduction_res()
 elif mode == 'Districts':
     district_res()
-elif mode == 'Parties':
-    parties_res()
 elif mode == 'Districts - comparative':
     district_comp_res()
+elif mode == 'Parties':
+    parties_res()
+elif mode == 'Parties - ranking':
+    parties_rank_res()
 elif mode == 'Relationships':
     relationships_res()
