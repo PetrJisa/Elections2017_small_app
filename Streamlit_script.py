@@ -4,6 +4,40 @@ import numpy as np
 from matplotlib import pyplot as plt
 import streamlit as st
 
+colors = {
+        'Občanská demokratická strana': 'blue',
+        'Řád národa - Vlastenecká unie': (1, 0.1, 1),
+        'CESTA ODPOVĚDNÉ SPOLEČNOSTI': (0.77, 1, 0.3),
+        'Česká strana sociálně demokratická': 'orange',
+        'Volte Pravý Blok': (0, 0.67, 0.8),
+        'Radostné Česko': (1, 0.4, 0.5),
+        'STAROSTOVÉ A NEZÁVISLÍ': (0, 0.1, 0.02),
+        'Komunistická strana Čech a Moravy': 'red',
+        'Strana zelených': 'green',
+       'ROZUMNÍ - stop migraci a diktátu EU': (0.7, 0, 0),
+       'Společnost proti developerské výstavbě v Prokopském údolí': (0.27, 0.4, 0),
+       'Strana svobodných občanů': (0, 1, 0.5),
+       'Blok proti islamizaci - Obrana domova': (0.2, 0.1, 0),
+       'Občanská demokratická aliance': (0, 0.3, 0.6),
+       'Česká pirátská strana': 'brown',
+       'OBČANÉ 2011-SPRAVEDLNOST PRO LIDI': (0.5, 1, 0.5),
+       'Unie H.A.V.E.L.': (0, 0.8, 0.7),
+       'Česká národní fronta': (0, 0.2, 0.2),
+       'Referendum o EU	Referendum o Evropské unii': (0, 0.9, 0.9),
+       'TOP 09': 'purple',
+       'ANO 2011': 'darkblue',
+       'Dobrá volba 2016': (0.6, 0, 0.3),
+       'Sdružení pro republiku': (1, 0.7, 0.9),
+       'Křesťanská a demokratická unie': 'yellow',
+       'Česká strana národně sociální': (0.4, 0.13, 0),
+       'REALISTÉ': (0, 0.3, 0.15),
+       'SPORTOVCI': (1, 0.84, 0),
+       'Dělnická strana sociální spravedlnosti': (0.5, 0, 0),
+       'Svoboda a přímá demokracie': (0.3, 0.42, 1),
+       'Strana Práv Občanů': (0.6, 0, 0.3),
+       'Národ Sobě': (0.7, 1, 0.8)
+}
+
 # Csv to DataFrame, decorated by streamlit.cache (to make the app faster)
 @st.cache
 def primary_table():
@@ -34,7 +68,7 @@ def dist_comp_table(df, selection:list):
     table = df[selection]
     means = table.apply(np.mean, axis=0).sort_values(ascending=False)
     table = table.loc[:, means.index].assign(sum=table.apply(np.sum, axis=1))
-    table['Other parties'] = table['sum'].apply(lambda x: 100 - x)
+    table['Other parties'] = table['sum'].apply(lambda x: 100 - x) #senseless after update, but left as example of "100 - x" technique
     table = table.drop('sum', 1)
     return table
 
@@ -44,7 +78,7 @@ def plot_one_party(table, party: str, color: str):
     filtered = table[party].sort_values(ascending=False)
 
     fig, ax = plt.subplots(figsize=(8, 6))
-    ax.bar(filtered.index, filtered, color=color, edgecolor='black')
+    ax.bar(filtered.index, filtered, color=colors[party], edgecolor='black')
     ax.set_xticklabels(filtered.index, rotation=90, fontsize=12)
     ax.set_ylabel('Votes (%)', fontsize=12)
     ax.set_title(party, fontsize=14)
@@ -55,8 +89,9 @@ def plot_one_party(table, party: str, color: str):
 def plot_pie(table, district: str):
     plt.rcParams.update({'font.size': 14})
     parties_df = parties(table, district)
+    clrs = [colors[party] for party in parties_df.index[:-1]] + ['white']
     fig, ax = plt.subplots(1, 1, figsize=(10, 12))
-    wedges, labels, autopct = ax.pie(parties_df[district], labels=parties_df.index, rotatelabels=False, autopct=lambda x: f'{x:.1f} %')
+    wedges, labels, autopct = ax.pie(parties_df[district], labels=parties_df.index, rotatelabels=False, autopct=lambda x: f'{x:.1f} %', colors=clrs)
     plt.setp(labels, fontsize=20)
     ax.set_title(f'Results for {district}', fontsize=28)
     return fig
@@ -77,7 +112,6 @@ def minors_show(table, district):
 
 def dist_comp_plot(table):
     parties = table.columns.tolist()
-    colors = ['purple', 'brown', 'blue', 'orange', 'yellow', 'red', 'lightblue']
     districts = table.index.tolist()
     bottoms = [len(districts) * [0]]
     for party in parties[:-1]:
@@ -91,20 +125,12 @@ def dist_comp_plot(table):
                bottom=bottoms[i],
                label=parties[i],
                width=0.45,
-               color=colors[i%7],
+               color=colors[parties[i]],
                edgecolor='black')
 
-    others = parties[-1]
-    ax.bar(districts,
-           table[others],
-           bottom=bottoms[-1],
-           label=others,
-           width=0.45,
-           color='black',
-           edgecolor='black')
 
     ax.set_xticklabels(districts, rotation=90, fontsize=14)
-    ax.legend(bbox_to_anchor=(0.1, 1), fontsize=12)
+    ax.legend(bbox_to_anchor=(0.5, 1.14), fontsize=12)
     ax.set_ylabel('Votes (%)', fontsize=14)
     ax.grid(axis='y', linewidth=1.2)
 
@@ -140,7 +166,7 @@ def correlation_plot(table, party1: str, party2: str):
     ax.set_xlabel(f'{party1} - votes (%)', fontsize=14)
     ax.set_ylabel(f'{party2} - votes (%)', fontsize=14)
     ax.grid(linewidth=1.2)
-    ax.legend(bbox_to_anchor=(0.6, 1.14), fontsize=12)
+    ax.legend(bbox_to_anchor=(0.5, 1.14), fontsize=12)
 
     return fig
 
@@ -196,12 +222,13 @@ def introduction_res():
     st.write('')
     st.write('**To display the generated objects in full screen mode, please use the double arrays.**')
     st.write('')
-    st.write('What more could be said? Just **ENJOY!**')
+    st.write('**In case of troubles, please contact me via petr.jisa1406@gmail.com**')
     st.image('Flag.jpg')
 
 
 def district_res():
     st.write('## Here you can look at the results for selected districts')
+    st.write('You can do a multiple selection if you want to see results for more districts')
     districts = st.multiselect('Districts', basic_df.index)
     for district in districts:
         st.pyplot(plot_pie(basic_df, district))
@@ -246,7 +273,7 @@ def relationships_res():
     with left_col:
         party1 = st.selectbox('Choose first party', relevant_parties)
     with right_col:
-        party2 = st.selectbox('Choose second party', relevant_parties)
+        party2 = st.selectbox('Choose second party', relevant_parties[::-1])
 
     if party1 == party2:
         st.write('The same parties are selected to be compared. Come on, it would be so senseless! :-)')
