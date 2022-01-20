@@ -4,38 +4,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 import streamlit as st
 
-colors = {
-        'Občanská demokratická strana': 'blue',
-        'Řád národa - Vlastenecká unie': (1, 0.1, 1),
-        'Cesta odpovědné společnosti': (0.77, 1, 0.3),
-        'Česká strana sociálně demokratická': 'orange',
-        'Volte Pravý Blok': (0, 0.67, 0.8),
-        'Radostné Česko': (1, 0.4, 0.5),
-        'Starostové a nezávislí': (0, 0.1, 0.02),
-        'Komunistická strana Čech a Moravy': 'red',
-        'Strana zelených': 'green',
-       'Rozumní - stop migraci a diktátu EU': (0.7, 0, 0),
-       'Společnost proti developerské výstavbě v Prokopském údolí': (0.27, 0.4, 0),
-       'Strana svobodných občanů': (0, 1, 0.5),
-       'Blok proti islamizaci - Obrana domova': (0.2, 0.1, 0),
-       'Občanská demokratická aliance': (0, 0.3, 0.6),
-       'Česká pirátská strana': 'brown',
-       'OBČANÉ 2011-SPRAVEDLNOST PRO LIDI': (0.5, 1, 0.5),
-       'Unie H.A.V.E.L.': (0, 0.8, 0.7),
-       'Česká národní fronta': (0, 0.2, 0.2),
-       'Referendum o EU': (0, 0.9, 0.9),
-       'TOP 09': 'purple',
-       'Ano 2011': (0.3, 0.42, 1),
-       'Dobrá volba 2016': (0.6, 0, 0.3),
-       'Sdružení pro republiku': (1, 0.7, 0.9),
-       'Křesťanská a demokratická unie': 'yellow',
-       'Česká strana národně sociální': (0.4, 0.13, 0),
-       'Realisté': (0, 0.3, 0.15),
-       'Sportovci': (1, 0.84, 0),
-       'Dělnická strana sociální spravedlnosti': (0.5, 0, 0),
-       'Svoboda a přímá demokracie': (0.3, 0.42, 1),
-       'Strana Práv Občanů': (0.6, 0, 0.3),
-       'Národ Sobě': (0.7, 1, 0.8)}
 
 
 @st.cache
@@ -47,21 +15,35 @@ Removes columns which are not related directly to parties'''
 
     imported_df = pd.read_csv('Districts.csv', encoding='windows-1250').fillna(0).set_index('Kraj')
 
+    # Capitalization
     rename_lst = [party.capitalize() for party in imported_df.columns]
+
+    # For the cases where the capitalization destroys capitalized words inside the string
+    rename_dict = \
+        {'Komunistická strana čech a moravy': 'Komunistická strana Čech a Moravy',
+         'Unie h.a.v.e.l.': 'Unie H.A.V.E.L.',
+         'Referendum o eu referendum o evropské unii': 'Referendum o EU',
+         'Top 09': 'TOP 09',
+         'Rozumní - stop migraci a diktátu eu': 'Rozumní - stop migraci a diktátu EU',
+         'Blok proti islamizaci - obrana domova': 'Blok proti islamizaci - Obrana domova',
+         'Řád národa - vlastenecká unie': 'Řád národa - Vlastenecká unie',
+         'Radostné česko': 'Radostné Česko',
+         'Volte pravý blok': 'Volte Pravý Blok',
+         'Občané 2011-spravedlnost pro lidi': 'OBČANÉ 2011-SPRAVEDLNOST PRO LIDI',
+         'Národ sobě': 'Národ Sobě',
+         'Referendum o eu - referendum o evropské unii': 'Referendum o EU',
+         'Společnost proti developerské výstavbě v prokopském údolí':'Společnost proti developerské výstavbě v Prokopském údolí',
+         'Strana práv občanů': 'Strana Práv Občanů'}
 
     basic_df = (imported_df
                 .set_axis(rename_lst, axis=1)
                 .drop(columns=['Vydané obálky', 'Odevzdané obálky', 'Unnamed: 4'])
                 .apply(lambda x, y: x if x.name == 'Platné hlasy' else x / y * 100, y=imported_df['Platné hlasy'])
                 .drop('Platné hlasy', axis=1)
-                .rename(columns={'Komunistická strana čech a moravy': 'Komunistická strana Čech a Moravy',
-                                 'Unie h.a.v.e.l.': 'Unie H.A.V.E.L.',
-                                 'Referendum o eu referendum o evropské unii':'Referendum o EU',
-                                 'Top 09':'TOP 09',
-                                 'Rozumní - stop migraci a diktátu eu':'Rozumní - stop migraci a diktátu EU',
-                                 'Blok proti islamizaci - obrana domova':'Blok proti islamizaci - Obrana domova'})
+                .rename(columns=rename_dict)
                 .round(1)
                 )
+
     return basic_df
 
 
@@ -73,32 +55,33 @@ Sorting acc to alphabetical order is specific for data from 2017'''
     if sort_mode == 'relevance':
         means = table.apply(np.mean, axis=0).sort_values(ascending=False)
         return table.loc[:, means.index]
-    elif sort_mode == 'alphabetical order': # Vypracovat univerzálně přes změnu capitals na bezdiakritické a pak znovu přejmenovat
+    elif sort_mode == 'alphabetical order':  # Vypracovat univerzálně přes změnu capitals na bezdiakritické a pak znovu přejmenovat
         # Fucking diacritics! Not a nice thing...
 
         # Dict for rewriting names of parties which begin with diacritical letter
         # Designed to represent the names to take a right position during alphabetical sorting
         corr_dict = \
-                {'Česká národní fronta': 'Czeská národní fronta',
-                 'Česká pirátská strana': 'Czeská pirátská strana',
-                 'Česká strana národně sociální': 'Czeská strana národně sociální',
-                 'Česká strana sociálně demokratická': 'Czeská strana sociálně demokratická',
-                 'Řád národa - vlastenecká unie': 'Rzád národa - vlastenecká unie'}
+            {'Česká národní fronta': 'Czeská národní fronta',
+             'Česká pirátská strana': 'Czeská pirátská strana',
+             'Česká strana národně sociální': 'Czeská strana národně sociální',
+             'Česká strana sociálně demokratická': 'Czeská strana sociálně demokratická',
+             'Řád národa - vlastenecká unie': 'Rzád národa - vlastenecká unie'}
 
         # Dict for giving back the names of the parties from corr_dict, after sorting
-        rev_corr_dict = {j : i for i, j in corr_dict.items()}
+        rev_corr_dict = {j: i for i, j in corr_dict.items()}
 
         temp_table = table.rename(columns=corr_dict)
 
         table = (temp_table
-                .reindex(sorted(temp_table.columns), axis=1)
-                .rename(columns = rev_corr_dict)
+                 .reindex(sorted(temp_table.columns), axis=1)
+                 .rename(columns=rev_corr_dict)
                  )
 
-        return table
+    return table
 
 class DataHandler():
     '''Class creating instance, from which tables for specific purposes are generated'''
+
 
     def __init__(self, sort_mode: str):
 
@@ -140,7 +123,7 @@ Results are sorted descendant according to results for the party.'''
         only_minors = aggregated[aggregated.index == 'Other parties']
         return without_minors.append(only_minors)
 
-    def minors_show(self, district):  # Implemented into DataHandler
+    def minors_show(self, district):
         im = self.basic_df.loc[district].to_frame()
         minors_lst = im[(im[district] < 1) & (im[district] > 0)].sort_values(ascending=False,
                                                                              by=district).index.values.tolist()
@@ -155,18 +138,52 @@ Results are sorted descendant according to results for the party.'''
 class PlotHandler():
     '''Class creating instance, which handles with creation of plots'''
 
+    def __init__(self):
+
+        self.colors = \
+        {'Občanská demokratická strana': 'blue',
+        'Řád národa - Vlastenecká unie': (1, 0.1, 1),
+        'Cesta odpovědné společnosti': (0.77, 1, 0.3),
+        'Česká strana sociálně demokratická': 'orange',
+        'Volte Pravý Blok': (0, 0.67, 0.8),
+        'Radostné Česko': (1, 0.4, 0.5),
+        'Starostové a nezávislí': (0, 0.1, 0.02),
+        'Komunistická strana Čech a Moravy': 'red',
+        'Strana zelených': 'green',
+        'Rozumní - stop migraci a diktátu EU': (0.7, 0, 0),
+        'Společnost proti developerské výstavbě v Prokopském údolí': (0.27, 0.4, 0),
+        'Strana svobodných občanů': (0, 1, 0.5),
+        'Blok proti islamizaci - Obrana domova': (0.2, 0.1, 0),
+        'Občanská demokratická aliance': (0, 0.3, 0.6),
+        'Česká pirátská strana': 'brown',
+        'OBČANÉ 2011-SPRAVEDLNOST PRO LIDI': (0.5, 1, 0.5),
+        'Unie H.A.V.E.L.': (0, 0.8, 0.7),
+        'Česká národní fronta': (0, 0.2, 0.2),
+        'Referendum o EU': (0, 0.9, 0.9),
+        'TOP 09': 'purple',
+        'Ano 2011': (0.3, 0.42, 1),
+        'Dobrá volba 2016': (0.6, 0, 0.3),
+        'Sdružení pro republiku': (1, 0.7, 0.9),
+        'Křesťanská a demokratická unie': 'yellow',
+        'Česká strana národně sociální': (0.4, 0.13, 0),
+        'Realisté': (0, 0.3, 0.15),
+        'Sportovci': (1, 0.84, 0),
+        'Dělnická strana sociální spravedlnosti': (0.5, 0, 0),
+        'Svoboda a přímá demokracie': (0.3, 0.42, 1),
+        'Strana Práv Občanů': (0.6, 0, 0.3),
+        'Národ Sobě': (0.7, 1, 0.8)}
+
     def district_main(self, src_data):
         '''Plots results for parties in selected districts as pie chart'''
         plt.rcParams.update({'font.size': 14})
         district_name = src_data.iloc[:, 0].name
 
-        clrs = [colors[party] for party in src_data.index[:-1]] + ['white']
+        clrs = [self.colors[party] for party in src_data.index[:-1]] + ['white']
         fig, ax = plt.subplots(1, 1, figsize=(10, 12))
         wedges, labels, autopct = ax.pie(src_data[district_name], labels=src_data.index, rotatelabels=False,
                                          autopct=lambda x: f'{x:.1f} %', colors=clrs)
         plt.setp(labels, fontsize=20)
         ax.set_title(f'Results for {district_name}', fontsize=28)
-        plt.show()  # Potom odstranit
         return fig
 
     def district_minors(self, src_data):
@@ -174,7 +191,6 @@ class PlotHandler():
         fig, ax = plt.subplots(1, 1, figsize=(14, 2))
         ax.text(0.3, 0.6, src_data, fontsize=16)
         ax.axis('off')
-        plt.show() # Potom odstranit
         return fig
 
     def party(self, src_data):
@@ -183,12 +199,11 @@ class PlotHandler():
         party_name = src_data.iloc[:,0].name
 
         fig, ax = plt.subplots(figsize=(8, 6))
-        ax.bar(src_data.index, src_data[party_name], color=colors[party_name], edgecolor='black')
+        ax.bar(src_data.index, src_data[party_name], color=self.colors[party_name], edgecolor='black')
         ax.set_xticklabels(src_data.index, rotation=90, fontsize=12)
         ax.set_ylabel('Votes (%)', fontsize=12)
         ax.set_title(f'Results for {party_name}', fontsize=14)
         ax.grid(axis='y', linewidth=1.2)
-        plt.show() #Potom odstranit
         return fig
 
     def parties_comparative(self, src_data, P = 0.35):
@@ -210,7 +225,7 @@ P is a diameter of the area which consists of aggregated columns, default 0.35''
                    src_data[party],
                    w,
                    edgecolor='black',
-                   color=colors[party],
+                   color=self.colors[party],
                    label=party)
 
             ax.set_xticks(x)
@@ -220,7 +235,6 @@ P is a diameter of the area which consists of aggregated columns, default 0.35''
             ax.legend(bbox_to_anchor=(0.5, 1.14), fontsize=12)
             i += 1
 
-        plt.show() # Potom odstranit
         return fig
 
 
@@ -242,7 +256,7 @@ P is a diameter of the area which consists of aggregated columns, default 0.35''
                    bottom=bottoms[i],
                    label=parties[i],
                    width=0.45,
-                   color=colors[parties[i]],
+                   color=self.colors[parties[i]],
                    edgecolor='black')
 
         ax.set_xticklabels(districts, rotation=90, fontsize=14)
@@ -250,7 +264,6 @@ P is a diameter of the area which consists of aggregated columns, default 0.35''
         ax.set_ylabel('Votes (%)', fontsize=14)
         ax.grid(axis='y', linewidth=1.2)
 
-        plt.show() #Pak odstranit
         return fig
 
     def ranking(self, src_data):
@@ -258,17 +271,25 @@ P is a diameter of the area which consists of aggregated columns, default 0.35''
         party = src_data.iloc[:, 0].name
         ds = src_data[party]
 
-        # Array - like basic variables
-        coef_array = np.max(ds) - ds + 1
-        expon_array = pow(2, coef_array)
+        # Array of exponential coefficients, 0 for parties with ranking 31 (no votes)
+        coef_array = np.array([np.max(ds) - ds[i] + 1 if ds[i] < 31 else 0 for i in range(ds.shape[0])])
+
+        #Array of 2^coeff_array, 0 for parties with ranking 31 (no votes), giving result 1 in operation 2^0
+        expon_func = np.vectorize(lambda x: x if x > 1 else 0)
+        expon_array = expon_func(pow(2, coef_array))
+
+        # Array of x - values
         x = np.array(range(1, np.shape(ds)[0] + 1))
+
+        # Array of descriptors for plt.annotate
+        descr_array = np.array([i if i < 31 else 'N/A' for i in ds])
 
         # Plot
         fig, ax = plt.subplots(figsize=(10, 7))
         ax.bar(x,
                expon_array,
                edgecolor='black',
-               color=colors[party])
+               color=self.colors[party])
 
         ax.set_title(f'{party} - ranking')
         ax.set_xticks(x)
@@ -277,10 +298,9 @@ P is a diameter of the area which consists of aggregated columns, default 0.35''
         ax.get_yaxis().set_visible(False)
 
         # Annotate
-        for i in range(np.shape(ds)[0]):
-            ax.annotate(ds[i], xy=(i + 0.90, expon_array[i] + np.max(expon_array) / 20), fontsize=14)
+        for i in range(np.shape(descr_array)[0]):
+            ax.annotate(descr_array[i], xy=(i + 0.85, expon_array[i] + np.max(expon_array) / 20), fontsize=14)
 
-        plt.show() #Potom odstranit
         return fig
 
     def correlation_plot(self, src_data, no_Prague = False):
@@ -321,7 +341,6 @@ P is a diameter of the area which consists of aggregated columns, default 0.35''
         ax.grid(linewidth=1.2)
         ax.legend(bbox_to_anchor=(0.5, 1.14), fontsize=12)
 
-        plt.show() #Potom odstranit
         return fig
 
     def corr_comment(self, src_data, no_Prague = False):
