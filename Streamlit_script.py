@@ -147,7 +147,7 @@ class PlotHandler():
         'Česká strana sociálně demokratická': 'orange',
         'Volte Pravý Blok': (0, 0.67, 0.8),
         'Radostné Česko': (1, 0.4, 0.5),
-        'Starostové a nezávislí': (0, 0.1, 0.02),
+        'Starostové a nezávislí': (0.15, 1, 0.4),
         'Komunistická strana Čech a Moravy': 'red',
         'Strana zelených': 'green',
         'Rozumní - stop migraci a diktátu EU': (0.7, 0, 0),
@@ -160,7 +160,7 @@ class PlotHandler():
         'Unie H.A.V.E.L.': (0, 0.8, 0.7),
         'Česká národní fronta': (0, 0.2, 0.2),
         'Referendum o EU': (0, 0.9, 0.9),
-        'TOP 09': 'purple',
+        'TOP 09': (0.75, 0.37, 1),
         'Ano 2011': (0.3, 0.42, 1),
         'Dobrá volba 2016': (0.6, 0, 0.3),
         'Sdružení pro republiku': (1, 0.7, 0.9),
@@ -343,34 +343,6 @@ P is a diameter of the area which consists of aggregated columns, default 0.35''
 
         return fig
 
-    def corr_comment(self, src_data, no_Prague = False):
-
-        if no_Prague == True:
-            src_data = src_data.drop('Hlavní město Praha', 0)
-
-        party1 = src_data.columns[0]
-        party2 = src_data.columns[1]
-        x = src_data[party1]
-        y = src_data[party2]
-        cc = np.corrcoef(x, y)[0, 1]
-
-        if cc >= 0.7:
-            result = f'''A strong positive correlation was found between the votes for *{party1}* and *{party2}* in individual districts.\n
-    The districts with higher votes for *{party1}* showed  a significant tendency to bring higher votes for *{party2}*.'''
-        elif cc >= 0.4:
-            result = f'''A middle-strength positive correlation was found between the votes for *{party1}* and *{party2}* in individual districts.\n
-    The districts with higher votes for *{party1}* showed a slight tendency to bring higher votes for *{party2}*.'''
-        elif cc >= -0.4:
-            result = f'''No significant correlation was found between the votes for *{party1}* and *{party2}* in individual districts.\n
-    The votes for *{party1}* and votes for *{party2}* are independent.'''
-        elif cc >= -0.7:
-            result = f'''A middle-strength negative correlation was found between the votes for *{party1}* and *{party2}* in individual districts.\n
-    The districts with higher votes for *{party1}* showed a slight tendency to bring lower votes for *{party2}*.'''
-        elif cc >= -1:
-            result = f'''A strong negative correlation was found between the votes for *{party1}* and *{party2}* in individual districts.\n
-    The districts with higher votes for *{party1}* showed a significant tendency to bring lower votes for *{party2}*.'''
-
-        return result
 
 # STREAMLIT PART BEGINS HERE
 
@@ -486,14 +458,10 @@ def relationships_res(data_obj, plot_obj):
     else:
         st.write('### Results from all districts')
         st.write('** Data from all districts are used, no exclusions **')
-        # corr_comment = plot_obj.corr_comment(data_obj.more_parties([party1, party2]))
-        # st.write(corr_comment)
         st.pyplot(plot_obj.correlation_plot(data_obj.more_parties([party1, party2])))
 
         st.write('### Results with exclusion of Prague')
         st.write('**Here are the results, when data from Prague are excluded from the evaluation**\n\n')
-        # corr_comment = plot_obj.corr_comment(data_obj.more_parties([party1, party2]), no_Prague=True)
-        # st.write(corr_comment)
         st.pyplot(plot_obj.correlation_plot(data_obj.more_parties([party1, party2]), no_Prague=True))
 
 
